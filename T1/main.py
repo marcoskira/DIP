@@ -1,9 +1,12 @@
 import cv2 as cv
 import numpy as np
 import collections as col
+import random as rand
 
-THRESHOLD = 150
-T = 0.5 # args[]
+LIMIT = 150 #args[]
+MAXCHANNELVALUE = 255 #args[]
+QTYCHANNEL = 3 #args[]
+THRESHOLD = 0.5 # args[]
 
 
 # Creates an auxiliar 2Dimensional array which will be used for pixel labelling
@@ -28,14 +31,14 @@ def main():
     img = cv.imread('./img/yui.jpg') # args[]
     width, height, channel = img.shape
 
-    img = binarization(img, width, height, THRESHOLD, channel)
+    img = binarization(img, width, height, LIMIT, channel)
 
     # Save modified image
     cv.imwrite('./img/yuibinarizado2.png', img) # args[]
 
 
 # Apply binarization 
-def binarization(img, width, height, threshold, channel):
+def binarization(img, width, height, limit, channel):
     for h in range(height):
         for w in range(width):
             pixel = img[w, h]
@@ -47,8 +50,8 @@ def binarization(img, width, height, threshold, channel):
             else:
                 s = int(pixel[0])
 
-            # Within threshold?
-            if s > threshold:
+            # Within limit?
+            if s > limit:
                 pixel = [255, 255, 255]
             else:
                 pixel = [0, 0, 0]
@@ -62,20 +65,24 @@ def binarization(img, width, height, threshold, channel):
 def calculateDistance(img, p, width, height, direction):
     pixelroot = img[p.y][p.x] 
 
-    if direction == 'top' and p.y - 1 >= 0 :
+    if direction == 'top':
         pixelchild = img[p.y - 1][p.x]
+    
 
     return spectrumDifference(pixelroot, pixelchild)
     
 
 # Returns the difference in spectrum between two 3 channels pixels 
 def spectrumDifference(pixelroot, pixelchild):
-    return abs(pixelroot[0] - pixelchild[0]) + abs(pixelroot[1] - pixelchild[1]) + abs(pixelroot[2] - pixelchild[2])
+    return abs(pixelroot[0] - pixelchild[0]) + 
+            abs(pixelroot[1] - pixelchild[1]) + 
+            abs(pixelroot[2] - pixelchild[2]) / ( MAXCHANNELVALUE * QTYCHANNEL)
 
 
 def blobdetection(img, width, height):
     pixels = createsAuxMatrix(width, height)
     label = 0
+    labelcolor = [rand.randint(0,255), rand.randint(0,255), rand.randint(0,255)] #verify how many channels img has
     stack = []
 
     for y in range(height):
@@ -91,21 +98,41 @@ def blobdetection(img, width, height):
                 while len(stack) != 0:
                     p = stack.pop()
 
-                    # Does its neighboard pixels belongs to the same blob/label?
-                    # Top
+                    # Evaluates if seed pixel neighbors belongs to the same blob:
+                    # Verifies if X and Y axis are within range of image
+                    # Top 
                     if p.y - 1 >= 0:
-                        dist = calculateDistance(img, p, width, height, 'top')
-                        if dist <= T: #Yes
-                            pixels[p.y-1][p.x].label = label
-                            stack.append(pixels[p.y-1][p.x])
+                         # Neighbor pixel was already labelled?
+                        if pixels[p.y-1][p.x].label == -1:
+                            dist = calculateDistance(img, p, width, height, 'top')
+                            if dist <= THRESHOLD: 
+                                pixels[p.y-1][p.x].label = label
+                                stack.append(pixels[p.y-1][p.x])
                     # Right
-
+                    if p.x + 1 <= width:
+                        if pixels[p.y][p.x+1].label == -1:
+                            dist = calculateDistance(img, p, width, height, 'right')
+                            if dist <= THRESHOLD:
+                                pixels[p.y][p.x+1].label = label
+                                stack.append(pixels[p.y][p.x+1])
                     # Bottom
-
+                    if p.y + 1 <= height:
+                        if pixels[p.y+1][p.x].label == -1:
+                            dist = calculateDistance(img, p, width, height, 'bottom')
+                            if dist <= THRESHOLD:
+                                pixels[p.y+1][p.x].label = label
+                                stack.append(pixels[p.y+1][p.x])
                     # Left
+                    if p.x - 1 >= 0:
+                        if pixels[p.y][p.x-1].label == -1:
+                            dist = calculateDistance(img, p, width, height, 'left')
+                            if dist <= THRESHOLD:
+                                pixels[p.y][p.x-1].label = label
+                                stack.append(pixels[p.y][p.x-1])
 
-                
+                # All pixels from the blob was found. Increment the label for the next blob
                 label++
+                labelcolor = [rand.randint(0,255), rand.randint(0,255), rand.randint(0,255)]
 
 
 
