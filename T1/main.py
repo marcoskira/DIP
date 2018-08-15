@@ -82,14 +82,14 @@ def blobdetection(img, width, height):
                                 pixels[p.y-1][p.x].label = label
                                 stack.append(pixels[p.y-1][p.x])
                     # Right
-                    if p.x + 1 <= width:
+                    if p.x + 1 < width:
                         if pixels[p.y][p.x+1].label == -1:
                             dist = calculateDistance(img, p.x, p.y, p.x+1, p.y)
                             if dist <= THRESHOLD:
                                 pixels[p.y][p.x+1].label = label
                                 stack.append(pixels[p.y][p.x+1])
                     # Bottom
-                    if p.y + 1 <= height:
+                    if p.y + 1 < height:
                         if pixels[p.y+1][p.x].label == -1:
                             dist = calculateDistance(img, p.x, p.y, p.x, p.y+1)
                             if dist <= THRESHOLD:
