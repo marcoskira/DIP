@@ -16,3 +16,23 @@ class Blob:
 
     def __init__(self, label):
         self.label = label
+
+
+
+# class Componente:
+
+#     label
+#     roi
+#     n_pixels
+
+
+# class Coordenada:
+#     x
+# 	y
+
+
+# class Retangulo:
+#     c # Cima.
+#     b # Baixo.
+#     e # Esquerda.
+#     d # Direita.
