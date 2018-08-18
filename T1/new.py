@@ -6,10 +6,10 @@ from classes import Pixel
 from classes import Blob
 
 
-INPUT_IMAGE = "./img/UB1.jpg"
+INPUT_IMAGE = "./img/arroz.jpg"
 
 # Ajuste estes parametros
-NEGATIVO = 0
+NEGATIVO = 1
 THRESHOLD = 200
 ALTURA_MIN = 5
 LARGURA_MIN = 5
@@ -166,21 +166,43 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
     return len(list_of_blobs)
 
 
+def negativeTransformation(img):
+    return 255 - img
+
+def paintBlobs(img):
+    for i in xrange(len(list_of_blobs)):
+        for j in xrange(len(list_of_blobs[i].pixels_list)):
+            img[list_of_blobs[i].pixels_list[j].y, list_of_blobs[i].pixels_list[j].x] = [50]
+    
+    return img
 
 def main ():
 
-    # Abre a imagem em escala de cinza, e mantem uma copia colorida dela para desenhar a saida
-    img = cv.imread(INPUT_IMAGE,  cv.COLOR_BGR2GRAY)
-    #img = cv.imread(INPUT_IMAGE)
+    img = cv.imread(INPUT_IMAGE)
     height, width, channel = img.shape
-    # Segmenta a imagem.
+
+
+    # Image binarization
     imgout = binariza (img, THRESHOLD, height, width, channel)
 
-    n_componentes = rotula (imgout, LARGURA_MIN, ALTURA_MIN, N_PIXELS_MIN, height, width)
-    print n_componentes
+    cv.imshow('Bin', imgout)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
 
-    imgout = drawRectangle(img)
-    cv.imwrite('./img/01-binarizada.jpeg', imgout)
+    if(NEGATIVO):
+        img = negativeTransformation(img)
+
+
+    cv.imshow('Negative', imgout)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+
+    # n_componentes = rotula (imgout, LARGURA_MIN, ALTURA_MIN, N_PIXELS_MIN, height, width)
+    # print n_componentes
+
+    # #imgout = drawRectangle(img)
+    # imgout = paintBlobs(imgout)
+    # cv.imwrite('./img/02-binarizada.jpg', imgout)
 
 
 
