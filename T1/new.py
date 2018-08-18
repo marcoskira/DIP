@@ -6,7 +6,7 @@ from classes import Pixel
 from classes import Blob
 
 
-INPUT_IMAGE = "./img/arroz.jpg"
+INPUT_IMAGE = "./img/UB1.jpg"
 
 # Ajuste estes parametros
 NEGATIVO = 0
@@ -14,6 +14,8 @@ THRESHOLD = 200
 ALTURA_MIN = 5
 LARGURA_MIN = 5
 N_PIXELS_MIN = 20
+FOREGROUND = 0
+BACKGROUND = 255
 
 list_of_blobs = []
 
@@ -23,11 +25,11 @@ def drawRectangle(img):
     print "Blobs qty: ", len(list_of_blobs)
 
     for i in xrange(0, len(list_of_blobs)):
-        print "Blobs qty: ", len(list_of_blobs)
+        #print "Blobs qty: ", len(list_of_blobs)
         last_pos = (len(list_of_blobs[i].pixels_list) - 1)
         cv.rectangle(img, (list_of_blobs[i].pixels_list[0].x, list_of_blobs[i].pixels_list[0].y), (list_of_blobs[i].pixels_list[last_pos].x, list_of_blobs[i].pixels_list[last_pos].y), (0,0,255), 2)
 
-        print "Pixel: ", list_of_blobs[i].pixels_list[0].x, list_of_blobs[i].pixels_list[0].y, list_of_blobs[i].pixels_list[last_pos].x, list_of_blobs[i].pixels_list[last_pos].y
+        #print "Pixel: ", list_of_blobs[i].pixels_list[0].x, list_of_blobs[i].pixels_list[0].y, list_of_blobs[i].pixels_list[last_pos].x, list_of_blobs[i].pixels_list[last_pos].y
 
     return img
 
@@ -54,11 +56,12 @@ def createsAuxMatrix(width, height):
         cols.append(row)
         row = []
 
+    #print "X: ", cols[20][25].x, "Y: ", cols[20][25].y
+
     return cols
 
 
 def binariza (img, threshold, height, width, channel):
-    print img.shape
 
     for h in xrange(height):
         for w in xrange(width):
@@ -72,9 +75,9 @@ def binariza (img, threshold, height, width, channel):
 
             # Within threshold?
             if s  > threshold:
-                pixel = [255, 255, 255]
+                pixel = [BACKGROUND, BACKGROUND, BACKGROUND]
             else:
-                pixel = [0, 0, 0]
+                pixel = [FOREGROUND, FOREGROUND,FOREGROUND]
 
             img[h, w] = pixel
 
@@ -93,8 +96,10 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
     for y in xrange(height):
         for x in xrange(width):
             
-            # Does this pixel was visited before?
-            if pixels[y][x].label == -1:
+
+            pix = img[y,x]
+            # Does this pixel was visited before AND is this a foreground?
+            if pixels[y][x].label == -1 and pix[0] == FOREGROUND:
                 pixels[y][x].label = label
 
                 
@@ -117,7 +122,7 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                             if dist <= THRESHOLD: 
                                 pixels[p.y-1][p.x].label = label
                                 stack.append(pixels[p.y-1][p.x])
-                                pixels_per_blob += 1
+                                #pixels_per_blob += 1
                     # Right
                     if p.x + 1 < width:
                         if pixels[p.y][p.x+1].label == -1:
@@ -125,7 +130,7 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                             if dist <= THRESHOLD:
                                 pixels[p.y][p.x+1].label = label
                                 stack.append(pixels[p.y][p.x+1])
-                                pixels_per_blob += 1
+                                #pixels_per_blob += 1
                     # Bottom
                     if p.y + 1 < height:
                         if pixels[p.y+1][p.x].label == -1:
@@ -133,7 +138,7 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                             if dist <= THRESHOLD:
                                 pixels[p.y+1][p.x].label = label
                                 stack.append(pixels[p.y+1][p.x])
-                                pixels_per_blob += 1
+                                #pixels_per_blob += 1
                     # Left
                     if p.x - 1 >= 0:
                         if pixels[p.y][p.x-1].label == -1:
@@ -141,7 +146,7 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                             if dist <= THRESHOLD:
                                 pixels[p.y][p.x-1].label = label
                                 stack.append(pixels[p.y][p.x-1])
-                                pixels_per_blob += 1
+                                #pixels_per_blob += 1
 
                 # If there is no more pixels in the stack. then all pixels from the blob was found
                 b.pixels_qty = pixels_per_blob
@@ -149,10 +154,10 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                 # If blob doesn't have minimum qty of pixels, ignore it
                 if b.pixels_qty >= N_PIXELS_MIN:
                     list_of_blobs.append(b)
+
+                    print "Blob pixels qty: ", b.pixels_qty
                 else:
                     label -= 1 #returns label
-
-                #n_componentes += 1
                 
                 # Reset values for next iteration
                 pixels_per_blob = 0
@@ -165,20 +170,13 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
 def main ():
 
     # Abre a imagem em escala de cinza, e mantem uma copia colorida dela para desenhar a saida
-    #img = cv.imread(INPUT_IMAGE,  cv.COLOR_BGR2GRAY)
-    img = cv.imread(INPUT_IMAGE)
+    img = cv.imread(INPUT_IMAGE,  cv.COLOR_BGR2GRAY)
+    #img = cv.imread(INPUT_IMAGE)
     height, width, channel = img.shape
     # Segmenta a imagem.
-    start_time = time.time()
     imgout = binariza (img, THRESHOLD, height, width, channel)
-    elapsed_time = time.time() - start_time
 
-    print "Binarization: ", elapsed_time
-
-    start_time = time.time()
     n_componentes = rotula (imgout, LARGURA_MIN, ALTURA_MIN, N_PIXELS_MIN, height, width)
-    elapsed_time = time.time() - start_time
-    print "Blob detection: ", elapsed_time
     print n_componentes
 
     imgout = drawRectangle(img)
