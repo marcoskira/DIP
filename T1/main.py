@@ -9,8 +9,8 @@ from classes import Blob
 INPUT_IMAGE = "./img/arroz.jpg"
 
 # Ajuste estes parametros
-NEGATIVO = 0
-THRESHOLD = 100
+NEGATIVO = 1
+THRESHOLD = 200
 ALTURA_MIN = 5
 LARGURA_MIN = 5
 N_PIXELS_MIN = 150
@@ -20,7 +20,6 @@ BACKGROUND = 255
 
 
 def drawRectangle(img, height, width, list_of_blobs):
-    
 
     for blob in list_of_blobs:
 
@@ -47,7 +46,7 @@ def drawRectangle(img, height, width, list_of_blobs):
                 max_y = pixel.y
 
         #print "Blob # Min X: ", min_x, "Min Y: ", min_y, "| Max X: ", max_x, "Max Y: ", max_y
-        cv.rectangle(img,(min_x,min_y),(max_x,max_y),(0,0,255),1)
+        cv.rectangle(img,(min_x,min_y),(max_x,max_y),(0,0,255),2)
         
         # Reset values for next blob evaluation
         min_x = width - 1
@@ -111,7 +110,6 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
     pixels = createsAuxMatrix(width, height)
     label = 0
     pixels_per_blob = 0
-    #blob_pixels_list = []
     stack = []
 
     for y in xrange(height):
@@ -121,8 +119,7 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
             # Does this pixel was visited before AND is this a foreground?
             if pixels[y][x].label == -1 and pix[0] == FOREGROUND:
                 pixels[y][x].label = label
-
-                
+         
                 stack.append(pixels[y][x]) # Seed pixel
                 b = Blob() # New blob is found
 
@@ -132,28 +129,27 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
 
                     # Add it to blob's pixel queue
                     b.pixels_list.append(p)
-                    #blob_pixels_list.append(p)
                     pixels_per_blob += 1
 
                     # Top 
                     if p.y - 1 >= 0:
                         if pixels[p.y-1][p.x].label == -1:
                             dist = calculateDistance(img, p.x, p.y, p.x, p.y-1)
-                            if dist <= THRESHOLD: 
+                            if dist == 0: 
                                 pixels[p.y-1][p.x].label = label
                                 stack.append(pixels[p.y-1][p.x])
                     # Right
                     if p.x + 1 < width:
                         if pixels[p.y][p.x+1].label == -1:
                             dist = calculateDistance(img, p.x, p.y, p.x+1, p.y)
-                            if dist <= THRESHOLD:
+                            if dist == 0:
                                 pixels[p.y][p.x+1].label = label
                                 stack.append(pixels[p.y][p.x+1])
                     # Bottom
                     if p.y + 1 < height:
                         if pixels[p.y+1][p.x].label == -1:
                             dist = calculateDistance(img, p.x, p.y, p.x, p.y+1)
-                            if dist <= THRESHOLD:
+                            if dist == 0:
                                 pixels[p.y+1][p.x].label = label
                                 stack.append(pixels[p.y+1][p.x])
                
@@ -161,33 +157,24 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                     if p.x - 1 >= 0:
                         if pixels[p.y][p.x-1].label == -1:
                             dist = calculateDistance(img, p.x, p.y, p.x-1, p.y)
-                            if dist <= THRESHOLD:
+                            if dist == 0:
                                 pixels[p.y][p.x-1].label = label
                                 stack.append(pixels[p.y][p.x-1])
 
 
                 # If there is no more pixels in the stack. then all pixels from the blob was found
                 b.pixels_qty = pixels_per_blob
-                #b.pixels_list = blob_pixels_list
 
-
-                # ESSA PORRA TA DANDO APPEND COMO SE FOSSE UMA LISTA GIGANTE. TA SOMANDO TUDO
-                # print "Label: ", label
-                # print "Pixels qty: ", b.pixels_qty
-                # print "Pixels list: ", len(b.pixels_list)
-                #print "Pixels list: ", len(blob_pixels_list)
                 
                 # If blob doesn't have minimum qty of pixels, ignore it
                 if b.pixels_qty >= N_PIXELS_MIN:
                     list_of_blobs.append(b)
-                    # print "Blob pixels qty: ", b.pixels_qty
-                # else:
-                #     label -= 1 #returns label
+                else:
+                    label -= 1 #returns label
                 
                 # Reset values for next iteration
                 pixels_per_blob = 0
                 label += 1
-                #blob_pixels_list = []
                 
     return list_of_blobs
 
@@ -207,25 +194,15 @@ def main ():
     # Image binarization
     imgout = binariza (img, THRESHOLD, height, width, channel)
 
-    # cv.imshow('Binarizado', imgout)
-    # cv.waitKey(0)
-    # cv.destroyAllWindows()
-
     if(NEGATIVO):
         imgout = cv.bitwise_not(imgout)
-
-
 
     list_of_blobs = rotula (imgout, LARGURA_MIN, ALTURA_MIN, N_PIXELS_MIN, height, width)
     print len(list_of_blobs)
 
-    imgout = paintBlobs(imgout, list_of_blobs)
+    # imgout = paintBlobs(imgout, list_of_blobs)
     imgout = drawRectangle(imgout, height, width, list_of_blobs)
-
-    cv.imshow('blobs painted', imgout)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
-    # cv.imwrite('./img/02-binarizada.jpg', imgout)
+    cv.imwrite('./img/02-binarizada.jpg', imgout)
 
 
 

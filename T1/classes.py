@@ -12,5 +12,6 @@ class Pixel:
 class Blob:
 
     def __init__ (self):
+        self.roi = []
         self.pixels_list = []
         self.pixels_qty = 0
