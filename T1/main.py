@@ -6,20 +6,18 @@ from classes import Pixel
 from classes import Blob
 
 
-INPUT_IMAGE = "./img/arroz.jpg"
-
-# Ajuste estes parametros
-NEGATIVO = 1
-THRESHOLD = 200
-ALTURA_MIN = 5
-LARGURA_MIN = 5
-N_PIXELS_MIN = 150
-FOREGROUND = 0
-BACKGROUND = 255
+INPUT_IMAGE = "./img/rice.bmp" 
+NEGATIVE = 1                    # If 1, inverts colors in input image
+THRESHOLD = 200                 # Threshold to be used in image binarization (0 - 255)
+MIN_HEIGHT = 5                  # Mininum blob height
+MIN_WIDTH = 5                   # Mininum blob width
+MIN_PIXELS_N = 150              # Mininum blob pixel quantity 
+FOREGROUND = 0                  # Color to fill in Foreground (0 - 255)
+BACKGROUND = 255                # Color to fill in Background (0 - 255)
 
 
-
-def drawRectangle(img, height, width, list_of_blobs):
+# Draws a rectangle around every detected blob
+def drawsRectangle(img, height, width, list_of_blobs):
 
     for blob in list_of_blobs:
 
@@ -29,8 +27,8 @@ def drawRectangle(img, height, width, list_of_blobs):
         max_y = 0
 
 
-        for pixel in blob.pixels_list:
-                
+        for pixel in blob.pixels_list:     
+
             # Mininum X and Y
             if pixel.x < min_x:
                 min_x = pixel.x
@@ -45,7 +43,6 @@ def drawRectangle(img, height, width, list_of_blobs):
             if pixel.y > max_y:
                 max_y = pixel.y
 
-        #print "Blob # Min X: ", min_x, "Min Y: ", min_y, "| Max X: ", max_x, "Max Y: ", max_y
         cv.rectangle(img,(min_x,min_y),(max_x,max_y),(0,0,255),2)
         
         # Reset values for next blob evaluation
@@ -58,7 +55,7 @@ def drawRectangle(img, height, width, list_of_blobs):
     return img
 
 
-# Calculates the distance in color spectrum between two pixels for BGR channels. Neighborhood 4
+# Calculates the distance in color spectrum between two pixels for BGR channels.
 def calculateDistance(img, seed_x, seed_y, child_x, child_y):
     seed_pixel = img[seed_y][seed_x]
     child_pixel = img[child_y][child_x]
@@ -82,7 +79,8 @@ def createsAuxMatrix(width, height):
     return cols
 
 
-def binariza (img, threshold, height, width, channel):
+# Apply binarization on a given image
+def imgBinarization (img, threshold, height, width, channel):
 
     for h in xrange(height):
         for w in xrange(width):
@@ -105,32 +103,34 @@ def binariza (img, threshold, height, width, channel):
     return img
 
 
-def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
+# Detects blobs on a given image
+def blobDetection(img, min_width, min_height, min_pixels_n, height, width):
+    stack = []
     list_of_blobs = []
     pixels = createsAuxMatrix(width, height)
     label = 0
     pixels_per_blob = 0
-    stack = []
 
     for y in xrange(height):
         for x in xrange(width):
             
             pix = img[y,x]
-            # Does this pixel was visited before AND is this a foreground?
+            # Does this pixel was never visited before AND is this a foreground? If yes, then we found a seed pixel of a blob
             if pixels[y][x].label == -1 and pix[0] == FOREGROUND:
                 pixels[y][x].label = label
          
-                stack.append(pixels[y][x]) # Seed pixel
-                b = Blob() # New blob is found
+                stack.append(pixels[y][x]) # Seed pixel in put inside a stack
+                b = Blob() 
 
-                # While stack is not empty, verify neighbors from pixel
+                # While stack is not empty, verify neighbors from pixel which was never visited before
                 while len(stack) != 0:
                     p = stack.pop()
 
-                    # Add it to blob's pixel queue
+                    # Add it to blob's pixel list
                     b.pixels_list.append(p)
                     pixels_per_blob += 1
 
+                    # Neighboard 4
                     # Top 
                     if p.y - 1 >= 0:
                         if pixels[p.y-1][p.x].label == -1:
@@ -152,7 +152,6 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                             if dist == 0:
                                 pixels[p.y+1][p.x].label = label
                                 stack.append(pixels[p.y+1][p.x])
-               
                     # Left
                     if p.x - 1 >= 0:
                         if pixels[p.y][p.x-1].label == -1:
@@ -162,12 +161,12 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
                                 stack.append(pixels[p.y][p.x-1])
 
 
-                # If there is no more pixels in the stack. then all pixels from the blob was found
+                # If there is no more pixels in the stack, then all pixels from this blob was found
                 b.pixels_qty = pixels_per_blob
 
                 
                 # If blob doesn't have minimum qty of pixels, ignore it
-                if b.pixels_qty >= N_PIXELS_MIN:
+                if b.pixels_qty >= min_pixels_n:
                     list_of_blobs.append(b)
                 else:
                     label -= 1 #returns label
@@ -179,6 +178,7 @@ def rotula(img, largura_min, altura_min, n_pixels_min, height, width):
     return list_of_blobs
 
 
+# Paints pixels within a list of blobs in a image
 def paintBlobs(img, list_of_blobs):
     for blob in list_of_blobs:
         for pixel in blob.pixels_list:
@@ -186,23 +186,25 @@ def paintBlobs(img, list_of_blobs):
 
     return img
 
+
+
 def main ():
 
     img = cv.imread(INPUT_IMAGE)
     height, width, channel = img.shape
 
-    # Image binarization
-    imgout = binariza (img, THRESHOLD, height, width, channel)
+    imgout = imgBinarization (img, THRESHOLD, height, width, channel)
 
-    if(NEGATIVO):
+    if(NEGATIVE):
         imgout = cv.bitwise_not(imgout)
 
-    list_of_blobs = rotula (imgout, LARGURA_MIN, ALTURA_MIN, N_PIXELS_MIN, height, width)
+    list_of_blobs = blobDetection (imgout, MIN_WIDTH, MIN_HEIGHT, MIN_PIXELS_N, height, width)
     print len(list_of_blobs)
 
     # imgout = paintBlobs(imgout, list_of_blobs)
-    imgout = drawRectangle(imgout, height, width, list_of_blobs)
-    cv.imwrite('./img/02-binarizada.jpg', imgout)
+    imgout = drawsRectangle(imgout, height, width, list_of_blobs)
+
+    cv.imwrite('./img/01-binarization.bmp', imgout)
 
 
 
