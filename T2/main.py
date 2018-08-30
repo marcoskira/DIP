@@ -178,25 +178,30 @@ def paintBlobs(img, list_of_blobs):
 
     return img
 
-def blur1(img_original, img_blur, height, width, windowsize):
+
+def blur1(img_original, img_blur, height, width, wsize):
 
     for h in xrange(height):
         for w in xrange(width):
             sum = [0,0,0]
 
             # Verifica se janela nao ultrapassa margens
+            if (width - wsize/2 >= 0 and height - wsize/2 >= 0) and (width + wsize/2 < width and height + wsize/2 < height):
+                # Percorre janela
+                for line in xrange(height - wsize/2, height + wsize/2)
+                    for column in xrange(width - wsize/2, width + wsize/2)
+                        # Se for o pixel seed, ignora na soma
+                        #if line != h and column != w:
+                        pix = img_original[column][line]
+                        sum[0] += pix[0]
+                        sum[1] += pix[1]
+                        sum[2] += pix[2]
 
-            # Percorre janela
-            for line in xrange(height - windowsize/2, height + windowsize/2)
-                for column in xrange(width - windowsize/2, width + windowsize/2)
-                    # Se for o pixel seed, ignora na soma
-                    if line != h and column != w:
-                        pix = img[column][line]
+            img_blur[h][w] = [sum[0] / (wsize * wsize), sum[1] / (wsize * wsize), sum[2] / (wsize * wsize)]
+            sum = [0,0,0]
+
+    return img_blur  
                         
-
-
-
-
 
 
 def main ():
