@@ -6,7 +6,7 @@ from classes import Blob
 
 
 INPUT_IMAGE = "./img/example.jpg"
-WINDOWSIZE = 9
+WINDOWSIZE = 15
 
 
 # Draws a rectangle around every detected blob
@@ -185,18 +185,18 @@ def blur1(img_original, img_blur, height, width, wsize):
         for w in xrange(width):
             sum = [0,0,0]
 
-            # Verifica se janela nao ultrapassa margens
-            if (width - wsize/2 >= 0 and height - wsize/2 >= 0) and (width + wsize/2 < width and height + wsize/2 < height):
-                # Percorre janela
-                for h_window in xrange(height - wsize/2, height + wsize/2)
-                    for w_window in xrange(width - wsize/2, width + wsize/2)
-                        # Se for o pixel seed, ignora na soma
-                        #if h_window != h and w_window != w:
+            # Check if window size don't exceeds image margins
+            if (w - wsize/2 >= 0 and h - wsize/2 >= 0) and (w + wsize/2 < width and h + wsize/2 < height):
+                
+                # Analyze every pixel on window
+                for h_window in xrange(h - wsize/2, h + wsize/2):
+                    for w_window in xrange(w - wsize/2, w + wsize/2):
                         pix = img_original[h_window][w_window]
                         sum[0] += pix[0]
                         sum[1] += pix[1]
                         sum[2] += pix[2]
-
+                
+            # Apply blur on every channel
             img_blur[h][w] = [sum[0] / (wsize * wsize), sum[1] / (wsize * wsize), sum[2] / (wsize * wsize)]
             sum = [0,0,0]
 
@@ -216,7 +216,7 @@ def main ():
 
     img_blur = blur1(img_original, img_blur, height, width, WINDOWSIZE)
 
-    cv.imwrite('./img/01-blur.bmp', img_blur)
+    cv.imwrite('./img/01-blur.jpg', img_blur)
 
 
 
